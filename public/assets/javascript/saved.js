@@ -74,13 +74,39 @@ $(document).ready(function () {
         articleContainer.append(emptyWarning);
     }
 
+    function renderNotesList(data) {
+        var notesToRender = [];
+        var currentNote;
+        if (!data.notes.length) {
+            currentNote = [
+                "<li class='list-group-item'>",
+                "No notes for this article yet.",
+                "</li>"
+            ].join("");
+            notesToRender.push(currentNote);
+        }
+        else {
+            for (var i = 0; i < data.notes.length; i++) {
+                currentNote = $([
+                    "<li class='list-group-item note'>",
+                    data.notes[i].noteText,
+                    "<button class='btn btn-danger note-delete'>x</button",
+                    "</li>"
+                ]).join("");
+                currentNote.children("button").data("_id", data.notes[i]._id);
+                notesToRender.push(currentNote);
+            }
+        }
+        $(".note-container").append(notesToRender);
+    }
+
     //Delete an article
     function handleArticleDelete() {
         var articleToDelete = $(this).parents(".panel").data();
         $.ajax({
             method: "DELETE",
             url: "/api/articles/" + articleToDelete._id
-        }).then(function(data) {
+        }).then(function (data) {
             if (data.ok) {
                 init();
             }
@@ -88,37 +114,55 @@ $(document).ready(function () {
 
         function handleArticleNotes() {
             var currentArticle = $(this).parents(".panel").data();
-            $.get("/api/notes" + currentArticle._id).then(function(data) {
+            $.get("/api/notes/" + currentArticle._id).then(function (data) {
                 var modalText = [
-                    "<"
-                ]
-            })
+                    "<div class='container-fluid text-center'>",
+                    "<h4>Notes for Article: ",
+                    currentArticle._id,
+                    "</h4>",
+                    "<hr />",
+                    "<ul class='list-group note-container'>",
+                    "</ul>",
+                    "<textarea placeholder='New Note' rows='4' cols='60'></textarea>",
+                    "<button class='btn btn-success save'>Save Note</button>",
+                    "</div>"
+                ].join("");
+                bootbox.dialog({
+                    message: modalText,
+                    closeButton: true
+                });
+                var noteData = {
+                    _id: currentArticle._id,
+                    notes: data || []
+                };
+                $(".btn.save").data("article", noteData);
+                renderNotesList(noteData);
+            });
+        }
+    }
+    //Save a new note for an article
+    function handleNoteSave() {
+        var noteData;
+        var newNote = $(".bootbox-body textarea").val().trim();
+        if (newNote) {
+            noteData = {
+                _id: $(this).data("article")._id,
+                noteText: newNote
+            };
+            $.post("/api/notes", noteData).then(function () {
+                bootbox.hideAll();
+            });
         }
     }
 
-//     //Save an article
-//     function handleArticleSave() {
-//         var articleToSave = $(this).parents(".panel").data();
-//         articleToSave = true;
-//         $.ajax({
-//             method: "PATCH",
-//             url: "/api/headlines",
-//             data: articleToSave
-//         })
-//             .then(function (data) {
-//                 if (data.ok) {
-//                     init();
-//                 }
-//             });
-//     }
-
-//     function handleArticleScrape() {
-//         //Handle the "Scrape New Article" button
-//         $.get("/api/fetch")
-//             .then(function (data) {
-//                 init();
-//                 alert(data.message);
-//                 // bootbox.alert("<h3 class='text-center m-top-80'>" + data.message + "<h3>");
-//             });
-//     }
-// })
+    //Delete an article note
+    function handleNoteDelete() {
+        var noteToDelete = $(this).data("_id");
+        $.ajax({
+            url: "/api/notes/" + noteToDelete,
+            method: "DELETE"
+        }).then(function () {
+            bootbox.hideAll();
+        });
+    }
+});
