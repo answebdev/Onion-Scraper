@@ -16,6 +16,7 @@ module.exports = {
                 result[i].date = makeDate();
                 result[i].saved = false;
             }
+            //Insert all the articles after scraping them
             Article.collection.insertMany(result, { ordered: false }, function (err, docs) {
                 cb(err, docs);
             });

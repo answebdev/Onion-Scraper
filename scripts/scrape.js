@@ -4,11 +4,7 @@
 var axios = require("axios");
 var cheerio = require("cheerio");
 
-
-
-
 // A GET route for scraping The Onion website
-
 
 var scrape = function (cb) {
 
